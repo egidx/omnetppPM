@@ -122,7 +122,7 @@ public class ConfigureStyleDialog
         container.setLayout(new GridLayout(2, false));
 
         setHelpAvailable(false);
-        setTitle("Configure style");
+        setTitle("Configure [TESTING] style");
         setMessage("The sequence chart content will be stylized based on the following filter criteria");
 
         // create left hand side tree viewer
@@ -315,7 +315,7 @@ public class ConfigureStyleDialog
     }
 
     protected GenericTreeNode createColorTreeNode(Composite parent) {
-        Composite panel0 = createPanel(parent, "Color filter", "Choose subcategories to colorize the content of the sequence chart.", 1);
+        Composite panel0 = createPanel(parent, "Color [TESTING] filter", "Choose subcategories to colorize the content of the sequence chart.", 1);
         colorFilter = new DialogTreeNode("Coloring", panel0);
 
         Composite panel = createPanel(parent, "Axes", "When enabled, axes are colorized.", 2);
