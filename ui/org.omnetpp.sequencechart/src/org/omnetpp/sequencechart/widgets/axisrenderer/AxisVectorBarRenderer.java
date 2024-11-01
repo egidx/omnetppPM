@@ -37,6 +37,8 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
 
     private static final Color NO_VALUE_COLOR = ColorFactory.WHITE;
 
+    private boolean isTsnSched;
+
     private SequenceChart sequenceChart;
 
     private String vectorFileName;
@@ -66,8 +68,13 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
         this.dataVector = dataVector;
         this.data = dataVector.get(index);
         this.type = resultItem.getDataType();
-        if (type == ResultItem.DataType.TYPE_ENUM)
+        if (type == ResultItem.DataType.TYPE_ENUM) {
             enumType = resultItem.getEnum();
+        }
+
+        if (vectorName.contains("gate")) {
+            isTsnSched = true;
+        }
     }
 
     public String getVectorFileName() {
@@ -87,6 +94,7 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
     }
 
     public int getHeight() {
+        if (isTsnSched) { return 20; }
         return 12;
     }
 
@@ -163,8 +171,11 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
                     continue;
 
                 int colorIndex = getValueIndex(i);
-                graphics.setBackgroundColor(ColorFactory.getGoodLightColor(colorIndex));
-
+                if (isTsnSched) {
+                    graphics.setBackgroundColor(ColorFactory.GREEN);
+                } else { 
+                    graphics.setBackgroundColor(ColorFactory.getGoodLightColor(colorIndex));
+                }
                 if (phase == 0) {
                     graphics.fillRectangle(x1, 0, x2 - x1, getHeight());
                     graphics.setForegroundColor(AXIS_COLOR);
