@@ -29,15 +29,13 @@ import org.omnetpp.sequencechart.widgets.SequenceChart;
  * with the names representing the individual values of a data vector.
  */
 public class AxisVectorBarRenderer implements IAxisRenderer {
-    private static final Color AXIS_COLOR = ColorFactory.BLACK;
+    private static final Color AXIS_COLOR = ColorFactory.ORANGE;
 
     private static final Font VALUE_NAME_FONT = new Font(null, "Courier New", 8, 0);
 
     private static final Color VALUE_NAME_COLOR = ColorFactory.BLACK;
 
     private static final Color NO_VALUE_COLOR = ColorFactory.WHITE;
-
-    private boolean isTsnSched;
 
     private SequenceChart sequenceChart;
 
@@ -48,6 +46,8 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
     private String vectorModuleFullPath;
 
     private String vectorName;
+    
+    private boolean isTsnSched = false;
 
     // NOTE: this must be kept here to avoid the garbage collector delete the underlying C++ object, because it would also delete the XYArray
     @SuppressWarnings("unused")
@@ -68,12 +68,11 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
         this.dataVector = dataVector;
         this.data = dataVector.get(index);
         this.type = resultItem.getDataType();
-        if (type == ResultItem.DataType.TYPE_ENUM) {
+        if (type == ResultItem.DataType.TYPE_ENUM)
             enumType = resultItem.getEnum();
-        }
-
+        
         if (vectorName.contains("gate")) {
-            isTsnSched = true;
+        	isTsnSched = true;
         }
     }
 
@@ -94,7 +93,7 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
     }
 
     public int getHeight() {
-        if (isTsnSched) { return 20; }
+    	if (isTsnSched) { return 20; }
         return 12;
     }
 
@@ -172,9 +171,9 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
 
                 int colorIndex = getValueIndex(i);
                 if (isTsnSched) {
-                    graphics.setBackgroundColor(ColorFactory.GREEN);
-                } else { 
-                    graphics.setBackgroundColor(ColorFactory.getGoodLightColor(colorIndex));
+                	graphics.setBackgroundColor(ColorFactory.GREEN);	
+                } else {
+                	graphics.setBackgroundColor(ColorFactory.getGoodLightColor(colorIndex));
                 }
                 if (phase == 0) {
                     graphics.fillRectangle(x1, 0, x2 - x1, getHeight());
