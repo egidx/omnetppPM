@@ -29,13 +29,15 @@ import org.omnetpp.sequencechart.widgets.SequenceChart;
  * with the names representing the individual values of a data vector.
  */
 public class AxisVectorBarRenderer implements IAxisRenderer {
-    private static final Color AXIS_COLOR = ColorFactory.PINK;
+    private static final Color AXIS_COLOR = ColorFactory.ORANGE;
 
     private static final Font VALUE_NAME_FONT = new Font(null, "Courier New", 8, 0);
 
     private static final Color VALUE_NAME_COLOR = ColorFactory.BLACK;
 
     private static final Color NO_VALUE_COLOR = ColorFactory.WHITE;
+    
+    private static final int NUM_GATES = 2;
 
     private SequenceChart sequenceChart;
 
@@ -46,6 +48,8 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
     private String vectorModuleFullPath;
 
     private String vectorName;
+    
+    private int tsnRenderIndex;
     
     private boolean isTsnSched = false;
 
@@ -71,10 +75,30 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
         if (type == ResultItem.DataType.TYPE_ENUM)
             enumType = resultItem.getEnum();
         
-        if (vectorName.contains("openings")) {
+        if (vectorName.contains("gate")) {
         	isTsnSched = true;
         }
     }
+    
+    public AxisVectorBarRenderer(SequenceChart sequenceChart, String vectorFileName, String vectorRunName, String vectorModuleFullPath, String vectorName, ResultItem resultItem, XYArrayVector dataVector, int index, int tsnIndex) {
+        this.sequenceChart = sequenceChart;
+        this.vectorFileName = vectorFileName;
+        this.vectorRunName = vectorRunName;
+        this.vectorModuleFullPath = vectorModuleFullPath;
+        this.vectorName = vectorName;
+        this.dataVector = dataVector;
+        this.data = dataVector.get(index);
+        this.type = resultItem.getDataType();
+        if (type == ResultItem.DataType.TYPE_ENUM)
+            enumType = resultItem.getEnum();
+        
+        if (vectorName.contains("TSN")) {
+        	isTsnSched = true;
+        }
+        
+        this.tsnRenderIndex = tsnIndex;
+    }
+
 
     public String getVectorFileName() {
         return vectorFileName;
@@ -96,12 +120,123 @@ public class AxisVectorBarRenderer implements IAxisRenderer {
     	if (isTsnSched) { return 20; }
         return 12;
     }
+    
+    private void tsnSchedDrawAxis(Graphics graphics, IEvent startEvent, IEvent endEvent) {
+		 Rectangle rect = graphics.getClip(Rectangle.SINGLETON);
+		 int size = getDataLength();
+		
+		 int startIndex = getIndex(startEvent, true);
+		 if (startIndex == -1)
+		     startIndex = 0;
+		
+		 int endIndex = getIndex(endEvent, false);
+		 if (endIndex == -1)
+		     endIndex = size;
+		
+		 // draw default color where no value is available
+		 graphics.setLineCap(SWT.CAP_SQUARE);
+		 graphics.setLineStyle(SWT.LINE_SOLID);
+		 graphics.setBackgroundColor(NO_VALUE_COLOR);
+		 graphics.fillRectangle(rect.x, tsnRenderIndex*getHeight(), rect.right() - rect.x, (tsnRenderIndex+1)*getHeight());
+		
+		 SequenceChartFacade sequenceChartFacade = sequenceChart.getInput().getSequenceChartFacade();
+		 IEventLog eventLog = sequenceChart.getInput().getEventLog();
+		 long endEventNumber = endEvent.getEventNumber();
+		
+		 // draw axis as a colored thick line with labels representing values
+		 // two phases: first draw the background and after that draw the values
+		 for (int phase = 0; phase < 2; phase++) {
+		     for (int i = startIndex; i < endIndex; i++) {
+		         long eventNumber = getEventNumber(i);
+		         long nextEventNumber = Math.min(endEventNumber, (i == size - 1) ? endEventNumber : getEventNumber(i + 1));
+		
+		         if (eventNumber == -1 || nextEventNumber == -1 || eventNumber >= nextEventNumber)
+		             continue;
+		
+		         IEvent event = eventLog.getEventForEventNumber(eventNumber);
+		         IEvent nextEvent = eventLog.getEventForEventNumber(nextEventNumber);
+		
+		         int x1 = Integer.MAX_VALUE;
+		         int x2 = Integer.MAX_VALUE;
+		
+		         // check for events being filtered out
+		 if (event != null)
+		     x1 = (int)sequenceChart.getViewportCoordinateForTimelineCoordinate(sequenceChartFacade.getTimelineCoordinateBegin(event));
+		 else {
+		     event = sequenceChartFacade.getNonFilteredEventForEventNumber(eventNumber);
+		     if (event != null) {
+		         BigDecimal eventSimulationTime = event.getSimulationTime();
+		         double eventTimelineCoordinate = sequenceChartFacade.getTimelineCoordinateForSimulationTime(eventSimulationTime, false);
+		
+		         if (eventTimelineCoordinate == sequenceChartFacade.getTimelineCoordinateForSimulationTime(eventSimulationTime, true))
+		             x1 = (int)sequenceChart.getViewportCoordinateForTimelineCoordinate(eventTimelineCoordinate);
+		     }
+		 }
+		
+		 if (nextEvent != null)
+		     x2 = (int)sequenceChart.getViewportCoordinateForTimelineCoordinate(sequenceChartFacade.getTimelineCoordinateBegin(nextEvent));
+		 else {
+		     nextEvent = sequenceChartFacade.getNonFilteredEventForEventNumber(nextEventNumber);
+		     if (nextEvent != null) {
+		         BigDecimal nextEventSimulationTime = nextEvent.getSimulationTime();
+		         double nextEventTimelineCoordinate = sequenceChartFacade.getTimelineCoordinateForSimulationTime(nextEventSimulationTime, false);
+		
+		         if (nextEventTimelineCoordinate == sequenceChartFacade.getTimelineCoordinateForSimulationTime(nextEventSimulationTime, true))
+		             x2 = (int)sequenceChart.getViewportCoordinateForTimelineCoordinate(nextEventTimelineCoordinate);
+		     }
+		 }
+		
+		 if (x1 == Integer.MAX_VALUE || x2 == Integer.MAX_VALUE)
+		     continue;
+		
+		 int colorIndex = getValueIndex(i);
+		 if (isTsnSched) {
+		 	graphics.setBackgroundColor(ColorFactory.GREEN);	
+		 } else {
+		 	graphics.setBackgroundColor(ColorFactory.getGoodLightColor(colorIndex));
+		 }
+		 if (phase == 0) {
+		     graphics.fillRectangle(x1, 0, x2 - x1, getHeight());
+		     graphics.setForegroundColor(AXIS_COLOR);
+		     graphics.drawLine(x1, 0, x1, getHeight());
+		 }
+		
+		 // draw labels starting at each value change and repeat labels based on canvas width
+		         if (phase == 1) {
+		             String name = getValueText(i);
+		             if (name != null) {
+		                 int labelWidth = (int)(graphics.getFontMetrics().getAverageCharacterWidth() * name.length());
+		
+		                 if (x2 - x1 > labelWidth + 6) {
+		                     graphics.setForegroundColor(VALUE_NAME_COLOR);
+		                     graphics.setFont(VALUE_NAME_FONT);
+		
+		                     int x = x1 + 5;
+		                     while (x < rect.right() && x < x2 - labelWidth) {
+		                         graphics.drawText(name, x, -1);
+		                         x += sequenceChart.getClientArea().width;
+		                     }
+		                 }
+		             }
+		         }
+		     }
+		 }
+		
+		 graphics.setForegroundColor(AXIS_COLOR);
+		 graphics.drawLine(rect.x, (tsnRenderIndex * getHeight()), rect.right(), (tsnRenderIndex * getHeight()));
+		 graphics.drawLine(rect.x, ((tsnRenderIndex+1) * getHeight()), rect.right(), ((tsnRenderIndex+1) * getHeight()));	
+    }
 
     /**
      * Draws a colored tick bar based on the values in the data vector in the given range.
      */
     public void drawAxis(Graphics graphics, IEvent startEvent, IEvent endEvent)
     {
+    	if (isTsnSched) {
+    		tsnSchedDrawAxis(graphics, startEvent, endEvent);  
+    		return; 
+    	}
+    	
         Rectangle rect = graphics.getClip(Rectangle.SINGLETON);
         int size = getDataLength();
 

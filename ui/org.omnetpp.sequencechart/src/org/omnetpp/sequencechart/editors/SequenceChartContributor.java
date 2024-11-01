@@ -2004,6 +2004,23 @@ public class SequenceChartContributor extends EditorActionBarContributor impleme
                         id = (Long)dialog.getFirstResult();
                     }
 
+                    /* NOTE: E: USER MODIFICATION */
+                    long tsnIdx = 0;
+                    for (int i = 0; i < idList.size(); i++) {
+                    	long idLoop = idList.get(i);
+                        ResultItem resLoop = resultFileManager.getItem(idLoop);
+                    	String x = resLoop.getName();
+                    	if (x.contains("TSN")) {
+                            IDList idListLoop = new IDList(idLoop);
+                            XYArrayVector dataVecLoop = ScaveEngine.readVectorsIntoArrays2(resultFileManager, idListLoop, true, true);
+                            IAxisRenderer axisRendLoop = new AxisVectorBarRenderer(sequenceChart, vectorFileName, vectorRunName, resLoop.getModuleName(), resLoop.getName(), resLoop, dataVecLoop, 0, tsnIdx);
+                            axisRendLoop = new AxisMultiRenderer(new IAxisRenderer[] {new AxisLineRenderer(sequenceChart, axisModule), axisRendLoop}, 1);
+                            sequenceChart.setAxisRenderer(axisModule, axisRendLoop);
+                            tsnIdx++;
+                    	}
+                    }
+                    /* NOTE: E: END USER MODIFICATION */
+                    
                     // attach vector data
                     ResultItem resultItem = resultFileManager.getItem(id);
                     IDList selectedIdList = new IDList(id);
