@@ -29,7 +29,7 @@ import org.omnetpp.sequencechart.widgets.SequenceChart;
  * with the names representing the individual values of a data vector.
  */
 public class AxisVectorBarRenderer implements IAxisRenderer {
-    private static final Color AXIS_COLOR = ColorFactory.BLACK;
+    private static final Color AXIS_COLOR = ColorFactory.PINK;
 
     private static final Font VALUE_NAME_FONT = new Font(null, "Courier New", 8, 0);
 
